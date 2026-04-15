@@ -10,7 +10,7 @@
 
 <section>
 	<div class="icon">┐(︶▽︶)┌</div>
-	<h1>Bayar Sendiri Sendiri</h1>
+	<h1>Bayar Sendiri Sendiri~</h1>
 
 	<button onclick={() => goto(resolve('/camera'))}>Start →</button>
 </section>

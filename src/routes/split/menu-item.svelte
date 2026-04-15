@@ -60,7 +60,7 @@
 	}
 
 	.menu-item.active::before {
-		background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23a6e3a1' fill-opacity='1' fill-rule='evenodd'%3E%3Cpath d='M5 0h1L0 6V5zM6 5v1H5z'/%3E%3C/g%3E%3C/svg%3E");
+		background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2340a02b' fill-opacity='0.41' fill-rule='evenodd'%3E%3Cpath d='M5 0h1L0 6V5zM6 5v1H5z'/%3E%3C/g%3E%3C/svg%3E");
 	}
 
 	.menu-item.error::before {
@@ -70,6 +70,11 @@
 		font-weight: bold;
 		font-size: 0.9rem;
 		margin-bottom: 1rem;
+		text-shadow:
+			-1px -1px 0 var(--color-bg-1),
+			1px -1px 0 var(--color-bg-1),
+			-1px 1px 0 var(--color-bg-1),
+			1px 1px 0 var(--color-bg-1);
 	}
 
 	.menu-item .title {

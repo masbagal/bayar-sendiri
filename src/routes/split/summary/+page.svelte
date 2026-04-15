@@ -126,7 +126,7 @@
 
 <style>
 	section {
-		max-width: min(900px, 100vw);
+		max-width: 90vw;
 		margin: 0 auto;
 		padding: 1rem;
 	}
