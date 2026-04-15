@@ -132,9 +132,7 @@
 	}
 
 	button.back {
-		background: none;
 		color: var(--color-text);
-		border: none;
 		padding: 0;
 		margin-bottom: 1rem;
 		text-transform: none;

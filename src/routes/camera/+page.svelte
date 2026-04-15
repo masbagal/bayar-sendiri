@@ -92,10 +92,8 @@
 	{#if !sending}
 		<div class="controls">
 			{#if imageSrc}
-				<div>
-					<button onclick={initCamera} class="secondary">Retake</button>
-					<button onclick={handleProceed}>Proceed</button>
-				</div>
+				<button onclick={initCamera} class="secondary">Retake ⟲</button>
+				<button onclick={handleProceed}>Proceed →</button>
 			{:else}
 				<button class="shutter" onclick={takePicture} aria-label="Take a picture"></button>
 			{/if}
@@ -135,17 +133,23 @@
 		left: 0;
 		right: 0;
 		display: flex;
-		justify-content: center;
+		align-items: center;
+		flex-direction: column;
+		gap: 1rem;
+		isolation: isolate;
 	}
 
 	.shutter {
 		width: 80px;
 		height: 80px;
 		border-radius: 50%;
-		background: var(--color-theme-1);
 		border: 4px solid white;
 		outline: none;
 		cursor: pointer;
+	}
+
+	.shutter:before {
+		display: none;
 	}
 
 	.shutter:active {
@@ -158,9 +162,9 @@
 		left: 50%;
 		transform: translateX(-50%);
 		text-align: center;
-		background: var(--color-theme-1);
-		padding: 0.25rem 1rem;
-		color: var(--color-bg-1);
+		background: var(--color-bg-1);
+		padding: 0.5rem 1rem;
+		border: var(--color-text) 5px solid;
 	}
 
 	@keyframes flash {

@@ -33,14 +33,17 @@
 	.avatar {
 		display: inline-block;
 		margin: 0;
-		border: none;
-		background: none;
-		padding: 0;
-		border-bottom: 6px solid transparent;
+		padding: 0 8px 0 4px;
+		border-color: var(--color-divider);
 	}
 
 	.item.selected .avatar {
-		border-bottom: 6px solid var(--color-theme-2);
+		transform: translate(8px 6px);
+		border-color: var(--color-theme-2);
+	}
+
+	.item.selected .avatar:before {
+		display: none;
 	}
 
 	.avatar img {
@@ -52,7 +55,7 @@
 	}
 
 	.name {
-		margin-top: 0.5em;
+		margin-top: 1em;
 		text-align: center;
 		font-size: 0.7em;
 		opacity: 0.4;
@@ -61,7 +64,7 @@
 		-webkit-line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
-		width: 60px;
+		width: 68px;
 	}
 
 	.item.selected .name,

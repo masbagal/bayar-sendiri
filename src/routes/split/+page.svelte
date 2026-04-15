@@ -21,7 +21,9 @@
 
 	const unassignedItemIds = $derived(
 		receiptData
-			? receiptData.items.filter((item) => getAssignedUsers(item.id).length === 0).map((item) => item.id)
+			? receiptData.items
+					.filter((item) => getAssignedUsers(item.id).length === 0)
+					.map((item) => item.id)
 			: []
 	);
 
@@ -135,12 +137,11 @@
 		{#if getUsers().length > 0}
 			{#if submitError && unassignedItemIds.length > 0}
 				<div class="error-message">
-					{unassignedItemIds.length} item{unassignedItemIds.length > 1 ? 's' : ''} not assigned to anyone yet.
+					{unassignedItemIds.length} item{unassignedItemIds.length > 1 ? 's' : ''} not assigned to anyone
+					yet.
 				</div>
 			{/if}
-			<button class="summary-btn" onclick={goToSummary}>
-				View Summary
-			</button>
+			<button class="summary-btn" onclick={goToSummary}> View Summary </button>
 		{/if}
 	{/if}
 </section>
@@ -160,7 +161,9 @@
 		scroll-snap-type: x mandatory;
 		-ms-overflow-style: none;
 		scrollbar-width: none;
+		padding-bottom: 8px;
 		margin-bottom: 1rem;
+		margin-top: 1rem;
 	}
 
 	.summary-section {
@@ -215,16 +218,13 @@
 	}
 
 	button.add-people {
-		height: 60px;
-		width: 60px;
+		height: 68px;
+		width: 68px;
 		font-size: 0.8rem;
 		display: flex;
 		flex-basis: 60px;
 		align-items: center;
 		justify-content: center;
-		background: none;
-		color: var(--color-theme-2);
-		border: 2px dashed var(--color-theme-2);
 		scroll-snap-align: start;
 	}
 </style>
