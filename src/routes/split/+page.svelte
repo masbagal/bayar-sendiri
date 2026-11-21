@@ -234,6 +234,15 @@
 </section>
 
 <style>
+	/* Echo the selected avatar's inverted name tag. */
+	.prompt strong {
+		padding-inline: var(--s1);
+		background: var(--ink);
+		color: var(--paper);
+		font-weight: inherit;
+		text-transform: uppercase;
+	}
+
 	section {
 		display: flex;
 		flex-direction: column;
