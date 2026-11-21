@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { setCapturedImage } from '$lib/receipt-store.svelte.js';
@@ -36,14 +36,15 @@
 		}
 	};
 
-	const MAX_DIMENSION = 1024;
+	// Receipts are tall and narrow; 1024px left long receipts ~300px wide and unreadable.
+	const MAX_DIMENSION = 1600;
 
 	const takePicture = () => {
 		const context = canvas.getContext('2d');
 		if (context && streaming) {
 			context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-			// Resize for API: scale down to max 1024px on longest side
+			// Resize for API: scale down to MAX_DIMENSION on the longest side
 			const scale = Math.min(1, MAX_DIMENSION / Math.max(canvas.width, canvas.height));
 			const outW = Math.round(canvas.width * scale);
 			const outH = Math.round(canvas.height * scale);
@@ -52,7 +53,7 @@
 			offscreen.height = outH;
 			offscreen.getContext('2d')!.drawImage(canvas, 0, 0, outW, outH);
 
-			const data = offscreen.toDataURL('image/jpeg', 0.8);
+			const data = offscreen.toDataURL('image/jpeg', 0.85);
 			imageSrc = data;
 			streaming = false;
 			videoStream.getTracks().forEach((track) => track.stop());
@@ -66,6 +67,7 @@
 	};
 
 	onMount(initCamera);
+	onDestroy(() => videoStream?.getTracks().forEach((track) => track.stop()));
 </script>
 
 <div class="camera-app">

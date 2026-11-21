@@ -1,5 +1,5 @@
-import { SvelteMap } from 'svelte/reactivity';
-import type { User, ItemAssignments, UserTotal, UserItemShare, UserBreakdown, ReceiptData } from './types.js';
+import { splitBill } from './bill.js';
+import type { User, ItemAssignments, UserBreakdown, ReceiptData } from './types.js';
 
 // ─── State ───
 let users = $state<User[]>([]);
@@ -66,88 +66,9 @@ export function isAssigned(itemId: string, userId: string): boolean {
 	return (assignments[itemId] ?? []).includes(userId);
 }
 
-// ─── Per-User Totals ───
-export function calculateUserTotals(receiptData: ReceiptData): UserTotal[] {
-	const totalsMap = new SvelteMap<string, number>();
-
-	for (const user of users) {
-		totalsMap.set(user.id, 0);
-	}
-
-	for (const item of receiptData.items) {
-		const assignedUserIds = assignments[item.id] ?? [];
-		if (assignedUserIds.length === 0) continue;
-
-		const itemTotal = item.unitPrice * item.quantity;
-		const perUserShare = itemTotal / assignedUserIds.length;
-
-		for (const uid of assignedUserIds) {
-			totalsMap.set(uid, (totalsMap.get(uid) ?? 0) + perUserShare);
-		}
-	}
-
-	const totalFees = receiptData.fees.reduce((sum, f) => sum + f.amount, 0);
-	const totalDiscounts = receiptData.discounts.reduce((sum, d) => sum + d.amount, 0);
-	const subtotal = receiptData.subtotal;
-
-	return users.map((user) => {
-		const itemsSubtotal = totalsMap.get(user.id) ?? 0;
-		const proportion = subtotal > 0 ? itemsSubtotal / subtotal : 0;
-		const feeShare = totalFees * proportion;
-		const discountShare = totalDiscounts * proportion;
-
-		return {
-			userId: user.id,
-			fullName: user.fullName,
-			itemsSubtotal,
-			feeShare,
-			discountShare,
-			total: itemsSubtotal + feeShare - discountShare
-		};
-	});
-}
-
-// ─── Per-User Breakdown ───
+// ─── Breakdown ───
 export function calculateUserBreakdown(receiptData: ReceiptData): UserBreakdown[] {
-	const totalFees = receiptData.fees.reduce((sum, f) => sum + f.amount, 0);
-	const totalDiscounts = receiptData.discounts.reduce((sum, d) => sum + d.amount, 0);
-	const subtotal = receiptData.subtotal;
-
-	return users.map((user) => {
-		const items: UserItemShare[] = [];
-		let itemsSubtotal = 0;
-
-		for (const item of receiptData.items) {
-			const assignedUserIds = assignments[item.id] ?? [];
-			if (!assignedUserIds.includes(user.id)) continue;
-
-			const itemTotal = item.unitPrice * item.quantity;
-			const userShare = itemTotal / assignedUserIds.length;
-			itemsSubtotal += userShare;
-
-			items.push({
-				itemId: item.id,
-				itemName: item.name,
-				itemTotal,
-				sharedBy: assignedUserIds.length,
-				userShare
-			});
-		}
-
-		const proportion = subtotal > 0 ? itemsSubtotal / subtotal : 0;
-		const feeShare = totalFees * proportion;
-		const discountShare = totalDiscounts * proportion;
-
-		return {
-			userId: user.id,
-			fullName: user.fullName,
-			items,
-			itemsSubtotal,
-			feeShare,
-			discountShare,
-			total: itemsSubtotal + feeShare - discountShare
-		};
-	});
+	return splitBill(receiptData, users, assignments);
 }
 
 // ─── Reset ───

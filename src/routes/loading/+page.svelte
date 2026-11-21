@@ -20,9 +20,10 @@
 		}, 200);
 	};
 
-	const getCacheKey = (img: string) => {
-		const len = img.length;
-		return `receipt:${len}:${img.slice(50, 114)}`;
+	const getCacheKey = async (img: string) => {
+		const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(img));
+		const hex = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+		return `receipt:v2:${hex}`;
 	};
 
 	onMount(async () => {
@@ -35,7 +36,7 @@
 		}
 
 		try {
-			const cacheKey = getCacheKey(image);
+			const cacheKey = await getCacheKey(image);
 			const cached = sessionStorage.getItem(cacheKey);
 			if (cached) {
 				setReceiptData(JSON.parse(cached));

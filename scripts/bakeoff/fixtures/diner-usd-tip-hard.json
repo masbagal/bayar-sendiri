@@ -1,0 +1,8 @@
+{
+	"currency": "USD",
+	"lineTotals": [27.9, 11.5, 4.75, 9.75],
+	"subtotal": 53.9,
+	"fees": [4.58, 9.7],
+	"discounts": [],
+	"grandTotal": 68.18
+}

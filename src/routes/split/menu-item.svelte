@@ -4,25 +4,27 @@
 	interface Props {
 		id: string;
 		menuName: string;
-		price: number;
+		price: string;
 		quantity: number;
 		checked: boolean;
 		disabled: boolean;
 		error: boolean;
 		assignedUsers: { fullName: string }[];
 		toggle: () => void;
+		onedit: () => void;
 	}
 
 	let {
 		id = '0',
 		menuName = 'Unknown',
-		price = 0,
+		price = '0',
 		quantity = 1,
 		checked = false,
 		disabled = false,
 		error = false,
 		assignedUsers = [],
-		toggle
+		toggle,
+		onedit
 	}: Props = $props();
 	const uid = $props.id();
 </script>
@@ -39,7 +41,7 @@
 			{/each}
 		</div>
 		<div class="amount">x{quantity}</div>
-		<div class="price">{Intl.NumberFormat('id-ID').format(price)}</div>
+		<button class="price" onclick={onedit} aria-label="Edit {menuName}, {price}">{price} ✎</button>
 	</div>
 </div>
 
@@ -96,5 +98,19 @@
 	.menu-item .data .price,
 	.menu-item .data .amount {
 		text-align: right;
+	}
+
+	.menu-item .data button.price {
+		width: auto;
+		justify-self: end;
+		padding: 0.25rem 0;
+		border: none;
+		background: none;
+		text-transform: none;
+		font-size: inherit;
+	}
+
+	.menu-item .data button.price::before {
+		display: none;
 	}
 </style>

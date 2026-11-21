@@ -6,6 +6,7 @@
 	import { bottts } from '@dicebear/collection';
 	import { getReceiptData } from '$lib/receipt-store.svelte.js';
 	import { getUsers, calculateUserBreakdown } from '$lib/split-store.svelte.js';
+	import { formatMoney } from '$lib/bill.js';
 	import type { ReceiptData } from '$lib/types.js';
 
 	let receiptData = $state<ReceiptData | null>(null);
@@ -26,6 +27,7 @@
 	});
 
 	const breakdown = $derived(receiptData ? calculateUserBreakdown(receiptData) : []);
+	const splitTotal = $derived(breakdown.reduce((sum, person) => sum + person.total, 0));
 
 	function avatarUri(name: string) {
 		return createAvatar(bottts, { seed: name, size: 28, clip: false, translateY: 6 }).toDataUri();
@@ -89,24 +91,24 @@
 									<span class="shared-badge">÷{item.sharedBy}</span>
 								{/if}
 							</span>
-							<span>{Intl.NumberFormat('id-ID').format(item.userShare)}</span>
+							<span>{formatMoney(item.userShare, receiptData)}</span>
 						</div>
 					{/each}
-					{#if person.feeShare > 0}
+					{#if person.feeShare !== 0}
 						<div class="item-row fee">
 							<span>Tax/Extra Fee</span>
-							<span>{Intl.NumberFormat('id-ID').format(person.feeShare)}</span>
+							<span>{formatMoney(person.feeShare, receiptData)}</span>
 						</div>
 					{/if}
 					{#if person.discountShare > 0}
 						<div class="item-row discount">
 							<span>Discount</span>
-							<span>-{Intl.NumberFormat('id-ID').format(person.discountShare)}</span>
+							<span>-{formatMoney(person.discountShare, receiptData)}</span>
 						</div>
 					{/if}
 					<div class="person-total">
 						<span>Total</span>
-						<span>{Intl.NumberFormat('id-ID').format(person.total)}</span>
+						<span>{formatMoney(person.total, receiptData)}</span>
 					</div>
 				</div>
 				<div class="divider"></div>
@@ -114,7 +116,7 @@
 
 			<div class="grand-total">
 				<span>Grand Total</span>
-				<span>{Intl.NumberFormat('id-ID').format(receiptData.grandTotal)}</span>
+				<span>{formatMoney(splitTotal, receiptData)}</span>
 			</div>
 		</div>
 
@@ -188,6 +190,7 @@
 	.item-row {
 		display: flex;
 		justify-content: space-between;
+		gap: 0.75rem;
 		font-size: 0.85rem;
 		padding: 0.2rem 0;
 	}

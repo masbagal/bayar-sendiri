@@ -1,0 +1,8 @@
+{
+	"currency": "IDR",
+	"lineTotals": [70000, 42000, 24000, 38000, 10000],
+	"subtotal": 184000,
+	"fees": [8200, 16400],
+	"discounts": [20000],
+	"grandTotal": 188600
+}
