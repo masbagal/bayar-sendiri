@@ -1,163 +1,376 @@
 @font-face {
 	font-family: 'Departure Mono';
 	src: url('/fonts/DepartureMono.otf') format('opentype');
+	font-display: block;
 }
 
+/*
+ * Departure Mono is drawn on an 11px grid, so type sizes are multiples of 5.5px
+ * (crisp at 2x density). Spacing follows an 8px grid.
+ */
 :root {
-	--font-body: 'Departure Mono', monospace;
-	--font-mono: 'Fira Mono', monospace;
-	/* Catppuccin Latte palette */
-	--color-bg-0: #ccd0da; /* Surface 0 */
-	--color-bg-1: #eff1f5; /* Base */
-	--color-bg-2: #e6e9ef; /* Mantle */
-	--color-theme-1: #fe640b; /* Peach */
-	--color-theme-2: #40a02b; /* Green */
-	--color-text: #4c4f69; /* Text */
-	--color-divider: #acb0be; /* Surface 2 */
-	--column-width: 42rem;
-	--column-margin-top: 4rem;
-	font-family: var(--font-body);
-	color: var(--color-text);
+	--font: 'Departure Mono', ui-monospace, monospace;
+	--text-xs: 11px;
+	--text-sm: 16.5px;
+	--text-md: 22px;
+	--text-lg: 33px;
+	--text-xl: 44px;
+
+	--s1: 4px;
+	--s2: 8px;
+	--s3: 16px;
+	--s4: 24px;
+	--s5: 32px;
+	--s6: 48px;
+
+	--px: 4px;
+	--column: 30rem;
+
+	color-scheme: light dark;
 }
-@media (prefers-color-scheme: dark) {
-	:root {
-		/* Catppuccin Mocha palette */
-		--color-bg-0: #313244; /* Surface 0 */
-		--color-bg-1: #1e1e2e; /* Base */
-		--color-bg-2: #181825; /* Mantle */
-		--color-theme-1: #fab387; /* Peach */
-		--color-theme-2: #a6e3a1; /* Green */
-		--color-text: #cdd6f4; /* Text */
-		--color-divider: #585b70; /* Surface 2 */
-	}
+
+:root[data-theme='light'] {
+	color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+	color-scheme: dark;
+}
+
+/*
+ * Four-shade palettes from lospec.com, each softened for long reading: text 8-10:1, never the
+ * raw 13-14:1. Selected by data-palette on <html> (see src/lib/palette.svelte.ts, which also
+ * holds the matching avatar colours). Any element can carry data-palette to preview one.
+ * --tint and --tint-ink are the light-mode ends, used for the camera's LCD duotone.
+ */
+:root,
+[data-palette='icecream'] {
+	--paper: light-dark(#feeac5, #462433);
+	--paper-raised: light-dark(#fccca1, #5e3044);
+	--ink: light-dark(#69364b, #fee6c0);
+	--ink-decor: light-dark(#f39e91, #a94f57);
+	--tint: #feeac5;
+	--tint-ink: #69364b;
+}
+
+[data-palette='kirokaze'] {
+	--paper: light-dark(#daf1d4, #2a2443);
+	--paper-raised: light-dark(#beeb9a, #34475e);
+	--ink: light-dark(#363a59, #cfefbc);
+	--ink-decor: light-dark(#6ba2a0, #407380);
+	--tint: #daf1d4;
+	--tint-ink: #363a59;
+}
+
+[data-palette='mist'] {
+	--paper: light-dark(#c4f0c2, #2b2511);
+	--paper-raised: light-dark(#94d7b6, #234849);
+	--ink: light-dark(#27372c, #a4e0ba);
+	--ink-decor: light-dark(#508b87, #4c8d7b);
+	--tint: #c4f0c2;
+	--tint-ink: #27372c;
+}
+
+[data-palette='demichrome'] {
+	--paper: light-dark(#dee3dd, #29262b);
+	--paper-raised: light-dark(#c8cbc0, #41404d);
+	--ink: light-dark(#36343d, #d3d7cf);
+	--ink-decor: light-dark(#7e808b, #7c7b6e);
+	--tint: #dee3dd;
+	--tint-ink: #36343d;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	font-family: var(--font);
+	font-size: var(--text-sm);
+	line-height: 1.5;
+	color: var(--ink);
+	background: var(--paper);
+	-webkit-font-smoothing: none;
+	-moz-osx-font-smoothing: grayscale;
+	font-smooth: never;
+	-webkit-text-size-adjust: 100%;
 }
 
 body {
-	min-height: 100vh;
 	margin: 0;
-	background-attachment: fixed;
-	background-color: var(--color-bg-1);
-}
-
-.body-bg {
-	height: 100vh;
-	width: 100vw;
-	background-image: url('/halftone-bg.jpg');
-	background-size: cover;
-	position: fixed;
-	z-index: -1;
-	opacity: 0.05;
-}
-@media (prefers-color-scheme: dark) {
-	.body-bg {
-		filter: invert();
-	}
+	min-height: 100dvh;
+	background: var(--paper);
 }
 
 h1,
 h2,
+h3,
 p {
+	margin: 0;
 	font-weight: 400;
 }
 
-p {
-	line-height: 1.5;
-}
-
-a {
-	color: var(--color-theme-1);
-	text-decoration: none;
-}
-
-a:hover {
-	text-decoration: underline;
-}
-
 h1 {
-	font-size: 2rem;
-	text-align: center;
+	font-size: var(--text-lg);
+	line-height: 1.15;
+	text-transform: uppercase;
 }
 
 h2 {
-	font-size: 1rem;
+	font-size: var(--text-xs);
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
 }
 
-pre {
-	font-size: 16px;
-	font-family: var(--font-mono);
-	background-color: rgba(255, 255, 255, 0.45);
-	border-radius: 3px;
-	box-shadow: 2px 2px 6px rgb(255 255 255 / 25%);
-	padding: 0.5em;
-	overflow-x: auto;
-	color: var(--color-text);
+a {
+	color: inherit;
 }
 
-.text-column {
-	display: flex;
-	max-width: 48rem;
-	flex: 0.6;
-	flex-direction: column;
-	justify-content: center;
-	margin: 0 auto;
+img {
+	image-rendering: pixelated;
 }
 
 input,
-button {
-	font-size: inherit;
-	font-family: inherit;
+button,
+select,
+textarea {
+	font: inherit;
+	color: inherit;
 }
 
 button {
-	background: var(--color-bg-1);
-	padding: 1em 2em;
-	text-transform: uppercase;
-	border: var(--color-text) 2px solid;
-	color: var(--color-text);
-	background-image: url("data:image/svg+xml,%3Csvg width='52' height='26' viewBox='0 0 52 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234c4f69' fill-opacity='0.06'%3E%3Cpath d='M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414z' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-	position: relative;
-	width: 90%;
+	background: none;
+	border: 0;
+	padding: 0;
+	cursor: pointer;
 }
 
-button:before {
-	content: '';
-	height: 100%;
+:focus-visible {
+	outline: 2px dashed var(--ink);
+	outline-offset: 6px;
+}
+
+/* ─── Pixel frame: notched corners drawn with box-shadow ─── */
+.px-frame {
+	background: var(--paper);
+	box-shadow:
+		0 calc(-1 * var(--px)) 0 0 var(--ink),
+		0 var(--px) 0 0 var(--ink),
+		calc(-1 * var(--px)) 0 0 0 var(--ink),
+		var(--px) 0 0 0 var(--ink);
+}
+
+/* ─── Buttons ─── */
+.btn {
+	--btn-bg: var(--ink);
+	--btn-fg: var(--paper);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--s2);
 	width: 100%;
-	top: 8px;
-	left: 6px;
-	position: absolute;
-	z-index: -1;
-	background-color: var(--color-bg-1);
-	background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%234c4f69' fill-opacity='0.85' fill-rule='evenodd'%3E%3Cpath d='M5 0h1L0 6V5zM6 5v1H5z'/%3E%3C/g%3E%3C/svg%3E");
-	border: var(--color-divider) solid 1px;
+	min-height: var(--s6);
+	padding: var(--s2) var(--s3);
+	margin: var(--px) calc(var(--px) * 2) calc(var(--px) * 2) var(--px);
+	background: var(--btn-bg);
+	color: var(--btn-fg);
+	font-size: var(--text-sm);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	box-shadow:
+		0 calc(-1 * var(--px)) 0 0 var(--ink),
+		0 var(--px) 0 0 var(--ink),
+		calc(-1 * var(--px)) 0 0 0 var(--ink),
+		var(--px) 0 0 0 var(--ink),
+		calc(var(--px) * 2) var(--px) 0 0 var(--ink-decor),
+		var(--px) calc(var(--px) * 2) 0 0 var(--ink-decor);
 }
 
-button:active {
-	transform: translate(6px, 4px);
+.btn.secondary {
+	--btn-bg: var(--paper);
+	--btn-fg: var(--ink);
 }
 
-button:active:before {
-	display: none;
+.btn:active:not(:disabled) {
+	transform: translate(var(--px), var(--px));
+	box-shadow:
+		0 calc(-1 * var(--px)) 0 0 var(--ink),
+		0 var(--px) 0 0 var(--ink),
+		calc(-1 * var(--px)) 0 0 0 var(--ink),
+		var(--px) 0 0 0 var(--ink);
 }
 
-button.secondary {
-	background: var(--color-text);
-	color: var(--color-bg-1);
+.btn:disabled {
+	cursor: progress;
+	background-image: repeating-linear-gradient(
+		45deg,
+		transparent 0 4px,
+		color-mix(in srgb, var(--btn-fg) 35%, transparent) 4px 8px
+	);
 }
 
+.btn .cursor {
+	animation: blink 1s steps(1) infinite;
+}
+
+/* Text-style action, underlined on the pixel baseline. */
+.link {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--s1);
+	padding: var(--s1) 0;
+	text-decoration: underline;
+	text-decoration-thickness: 2px;
+	text-underline-offset: 4px;
+	text-transform: uppercase;
+	font-size: var(--text-xs);
+	letter-spacing: 0.1em;
+	white-space: nowrap;
+}
+
+.link:hover {
+	text-decoration-style: dotted;
+}
+
+/* ─── Dialog box (RPG text box) ─── */
+.dialog {
+	position: relative;
+	padding: var(--s3);
+	margin: var(--px);
+	background: var(--paper);
+	box-shadow:
+		0 calc(-1 * var(--px)) 0 0 var(--ink),
+		0 var(--px) 0 0 var(--ink),
+		calc(-1 * var(--px)) 0 0 0 var(--ink),
+		var(--px) 0 0 0 var(--ink),
+		inset 0 0 0 var(--px) var(--paper),
+		inset 0 0 0 calc(var(--px) + 2px) var(--ink);
+}
+
+/* Alerts invert the palette and lead with a glyph, never colour alone. */
+.dialog.alert {
+	background: var(--ink);
+	color: var(--paper);
+	box-shadow:
+		0 calc(-1 * var(--px)) 0 0 var(--ink),
+		0 var(--px) 0 0 var(--ink),
+		calc(-1 * var(--px)) 0 0 0 var(--ink),
+		var(--px) 0 0 0 var(--ink),
+		inset 0 0 0 var(--px) var(--ink),
+		inset 0 0 0 calc(var(--px) + 2px) var(--paper);
+}
+
+.dialog.alert::before {
+	content: '!';
+	float: left;
+	margin-right: var(--s2);
+	padding: 0 var(--s1);
+	background: var(--paper);
+	color: var(--ink);
+}
+
+/* Dotted divider in screen pixels. */
+.rule {
+	height: 2px;
+	border: 0;
+	margin: 0;
+	background-image: linear-gradient(to right, var(--ink) 50%, transparent 50%);
+	background-size: 4px 2px;
+}
+
+/* ─── Pixel checkbox ─── */
 input[type='checkbox'] {
-	transform: scale(2);
-	accent-color: var(--color-theme-2);
+	appearance: none;
+	flex: none;
+	width: 22px;
+	height: 22px;
+	margin: 3px;
+	cursor: pointer;
+	background: var(--paper);
+	box-shadow:
+		0 -3px 0 0 var(--ink),
+		0 3px 0 0 var(--ink),
+		-3px 0 0 0 var(--ink),
+		3px 0 0 0 var(--ink);
+}
+
+input[type='checkbox']:checked {
+	background: var(--ink);
+	box-shadow:
+		0 -3px 0 0 var(--ink),
+		0 3px 0 0 var(--ink),
+		-3px 0 0 0 var(--ink),
+		3px 0 0 0 var(--ink),
+		inset 0 0 0 4px var(--paper);
+}
+
+input[type='checkbox']:disabled {
+	cursor: not-allowed;
+	background-image: linear-gradient(45deg, transparent 45%, var(--ink) 45% 55%, transparent 55%);
+}
+
+/* ─── Text input ─── */
+.field {
+	width: 100%;
+	min-width: 0;
+	padding: var(--s2) var(--s2);
+	margin: 3px;
+	border: 0;
+	border-radius: 0;
+	background: var(--paper);
+	color: var(--ink);
+	box-shadow:
+		0 -3px 0 0 var(--ink),
+		0 3px 0 0 var(--ink),
+		-3px 0 0 0 var(--ink),
+		3px 0 0 0 var(--ink);
+	caret-color: var(--ink);
+}
+
+.field:focus-visible {
+	outline: none;
+	background: var(--paper-raised);
+}
+
+.field::placeholder {
+	color: var(--ink);
+	opacity: 0.55;
+}
+
+.field[aria-invalid='true'] {
+	background-image: repeating-linear-gradient(
+		45deg,
+		transparent 0 6px,
+		color-mix(in srgb, var(--ink) 18%, transparent) 6px 8px
+	);
 }
 
 .visually-hidden {
-	border: 0;
-	clip: rect(0 0 0 0);
-	height: auto;
-	margin: 0;
-	overflow: hidden;
-	padding: 0;
 	position: absolute;
 	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
 	white-space: nowrap;
+	border: 0;
+}
+
+@keyframes blink {
+	50% {
+		opacity: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0s !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0s !important;
+	}
 }

@@ -2,11 +2,10 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { createAvatar } from '@dicebear/core';
-	import { bottts } from '@dicebear/collection';
 	import { getReceiptData } from '$lib/receipt-store.svelte.js';
 	import { getUsers, calculateUserBreakdown } from '$lib/split-store.svelte.js';
 	import { formatMoney } from '$lib/bill.js';
+	import { avatarUri } from '$lib/avatar.js';
 	import type { ReceiptData } from '$lib/types.js';
 
 	let receiptData = $state<ReceiptData | null>(null);
@@ -28,10 +27,6 @@
 
 	const breakdown = $derived(receiptData ? calculateUserBreakdown(receiptData) : []);
 	const splitTotal = $derived(breakdown.reduce((sum, person) => sum + person.total, 0));
-
-	function avatarUri(name: string) {
-		return createAvatar(bottts, { seed: name, size: 28, clip: false, translateY: 6 }).toDataUri();
-	}
 
 	async function shareAsImage() {
 		if (!cardElement) return;
@@ -65,180 +60,191 @@
 </script>
 
 <svelte:head>
-	<title>Summary</title>
+	<title>Summary · Bayar Sendiri</title>
 </svelte:head>
 
 <section>
-	<button class="back" onclick={() => goto(resolve('/split'))}>&#8592; Back</button>
+	<a class="link back" href={resolve('/split')}>◀ Back to items</a>
 
 	{#if receiptData}
 		<div class="share-card" bind:this={cardElement}>
-			<h1>Bill Summary</h1>
-			<div class="date">{new Date().toLocaleDateString('id-ID', { dateStyle: 'long' })}</div>
-			<div class="divider"></div>
+			<div class="ticket">
+				<header>
+					<h1>Bill summary</h1>
+					<p class="date">{new Date().toLocaleDateString('id-ID', { dateStyle: 'long' })}</p>
+				</header>
+				<hr class="rule" />
 
-			{#each breakdown as person (person.userId)}
-				<div class="person-section">
-					<div class="person-header">
-						<img src={avatarUri(person.fullName)} alt={person.fullName} class="person-avatar" />
-						<h2>{person.fullName}</h2>
-					</div>
-					{#each person.items as item (item.itemId)}
-						<div class="item-row">
-							<span class="item-name">
-								{item.itemName}
-								{#if item.sharedBy > 1}
-									<span class="shared-badge">÷{item.sharedBy}</span>
-								{/if}
-							</span>
-							<span>{formatMoney(item.userShare, receiptData)}</span>
+				{#each breakdown as person, i (person.userId)}
+					<article class="person">
+						<div class="person-header">
+							<img src={avatarUri(person.fullName)} alt="" class="person-avatar" />
+							<h2><span class="slot">P{i + 1}</span> {person.fullName}</h2>
 						</div>
-					{/each}
-					{#if person.feeShare !== 0}
-						<div class="item-row fee">
-							<span>Tax/Extra Fee</span>
-							<span>{formatMoney(person.feeShare, receiptData)}</span>
+						{#each person.items as item (item.itemId)}
+							<div class="row">
+								<span class="item-name">
+									{item.itemName}
+									{#if item.sharedBy > 1}
+										<span class="badge" aria-label="split {item.sharedBy} ways"
+											>÷{item.sharedBy}</span
+										>
+									{/if}
+								</span>
+								<span>{formatMoney(item.userShare, receiptData)}</span>
+							</div>
+						{/each}
+						{#if person.feeShare !== 0}
+							<div class="row">
+								<span>Tax / fees</span>
+								<span>{formatMoney(person.feeShare, receiptData)}</span>
+							</div>
+						{/if}
+						{#if person.discountShare > 0}
+							<div class="row">
+								<span>Discount</span>
+								<span>-{formatMoney(person.discountShare, receiptData)}</span>
+							</div>
+						{/if}
+						<div class="person-total">
+							<span>Pays</span>
+							<span>{formatMoney(person.total, receiptData)}</span>
 						</div>
-					{/if}
-					{#if person.discountShare > 0}
-						<div class="item-row discount">
-							<span>Discount</span>
-							<span>-{formatMoney(person.discountShare, receiptData)}</span>
-						</div>
-					{/if}
-					<div class="person-total">
-						<span>Total</span>
-						<span>{formatMoney(person.total, receiptData)}</span>
-					</div>
+					</article>
+					<hr class="rule" />
+				{/each}
+
+				<div class="grand-total">
+					<span>Grand total</span>
+					<span>{formatMoney(splitTotal, receiptData)}</span>
 				</div>
-				<div class="divider"></div>
-			{/each}
-
-			<div class="grand-total">
-				<span>Grand Total</span>
-				<span>{formatMoney(splitTotal, receiptData)}</span>
+				<p class="footer-note">Bayar sendiri sendiri~ ┐(︶▽︶)┌</p>
 			</div>
 		</div>
 
-		<button class="share-btn" onclick={shareAsImage} disabled={sharing}>
-			{sharing ? 'Generating...' : 'Share as Image'}
+		<button class="btn" onclick={shareAsImage} disabled={sharing}>
+			{sharing ? 'Printing...' : 'Share as image ▶'}
 		</button>
 	{/if}
 </section>
 
 <style>
 	section {
-		max-width: 90vw;
-		margin: 0 auto;
-		padding: 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: var(--s3);
 	}
 
-	button.back {
-		color: var(--color-text);
-		padding: 0;
-		margin-bottom: 1rem;
-		text-transform: none;
+	.back {
+		align-self: flex-start;
 	}
 
+	/* Padding keeps the pixel frame inside the element html-to-image captures. */
 	.share-card {
-		background-color: var(--color-bg-1);
-		padding: 1.5rem;
-		border-radius: 4px;
-		box-shadow:
-			0 1px 3px rgba(0, 0, 0, 0.08),
-			0 4px 12px rgba(0, 0, 0, 0.04);
+		padding: var(--s2);
+		background-color: var(--paper);
 	}
 
-	.date {
-		font-size: 0.75rem;
-		opacity: 0.6;
-		margin: 0 auto 0.25rem;
+	.ticket {
+		display: grid;
+		gap: var(--s3);
+		padding: var(--s4) var(--s3);
+		background: var(--paper);
+		box-shadow:
+			0 calc(-1 * var(--px)) 0 0 var(--ink),
+			0 var(--px) 0 0 var(--ink),
+			calc(-1 * var(--px)) 0 0 0 var(--ink),
+			var(--px) 0 0 0 var(--ink),
+			inset 0 0 0 var(--px) var(--paper),
+			inset 0 0 0 calc(var(--px) + 2px) var(--ink);
+	}
+
+	header {
+		display: grid;
+		gap: var(--s1);
 		text-align: center;
 	}
 
-	.share-card h1 {
-		font-size: 1.4rem;
-		margin: 0 0 0.5rem;
+	h1 {
+		font-size: var(--text-md);
 	}
 
-	.divider {
-		border-bottom: 1px dashed var(--color-divider);
-		margin: 0.75rem 0;
+	.date,
+	.footer-note {
+		font-size: var(--text-xs);
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		text-align: center;
 	}
 
-	.person-section {
-		padding: 0.5rem 0;
+	.person {
+		display: grid;
+		gap: var(--s1);
 	}
 
 	.person-header {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		margin-bottom: 0.5rem;
+		gap: var(--s2);
+		margin-bottom: var(--s1);
 	}
 
 	.person-avatar {
-		width: 28px;
-		height: 28px;
+		width: 32px;
+		height: 32px;
 	}
 
-	.person-section h2 {
-		font-size: 1rem;
-		margin: 0;
+	.person h2 {
+		font-size: var(--text-sm);
+		letter-spacing: 0;
 	}
 
-	.item-row {
+	.slot {
+		padding: 0 var(--s1);
+		background: var(--ink);
+		color: var(--paper);
+		font-size: var(--text-xs);
+	}
+
+	.row {
 		display: flex;
 		justify-content: space-between;
-		gap: 0.75rem;
-		font-size: 0.85rem;
-		padding: 0.2rem 0;
+		gap: var(--s3);
+		font-size: var(--text-sm);
 	}
 
 	.item-name {
 		display: flex;
-		align-items: center;
-		gap: 0.4em;
+		align-items: baseline;
+		flex-wrap: wrap;
+		gap: var(--s1);
+		min-width: 0;
+		overflow-wrap: anywhere;
 	}
 
-	.shared-badge {
-		font-size: 0.7rem;
-		color: var(--color-bg-1);
-		background: var(--color-theme-2);
-		padding: 0.1em 0.35em;
-		border-radius: 2px;
-	}
-
-	.fee {
-		opacity: 0.7;
-	}
-
-	.discount {
-		color: var(--color-theme-2);
+	.badge {
+		padding: 0 var(--s1);
+		font-size: var(--text-xs);
+		box-shadow: inset 0 0 0 2px var(--ink);
 	}
 
 	.person-total {
 		display: flex;
 		justify-content: space-between;
-		font-weight: bold;
-		font-size: 0.95rem;
-		padding: 0.3rem 0 0;
+		margin-top: var(--s1);
+		padding: var(--s1) var(--s2);
+		background: var(--paper-raised);
+		text-transform: uppercase;
 	}
 
 	.grand-total {
 		display: flex;
 		justify-content: space-between;
-		font-weight: bold;
-		font-size: 1.2rem;
-		padding: 0.5rem 0;
-	}
-
-	button.share-btn {
-		width: 100%;
-		margin-top: 1rem;
-	}
-
-	button.share-btn:disabled {
-		opacity: 0.6;
+		gap: var(--s3);
+		padding: var(--s2) var(--s3);
+		background: var(--ink);
+		color: var(--paper);
+		font-size: var(--text-md);
+		text-transform: uppercase;
 	}
 </style>

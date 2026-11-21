@@ -1,99 +1,80 @@
 <script lang="ts">
-	import { createAvatar } from '@dicebear/core';
-	import { bottts } from '@dicebear/collection';
+	import { avatarUri } from '$lib/avatar.js';
 
 	interface Props {
-		id: string;
 		fullName: string;
 		selected?: boolean;
 		onclick: () => void;
 	}
 
-	let { id = '0', fullName = 'Unknown', selected = false, onclick }: Props = $props();
-
-	const avatar = $derived(
-		createAvatar(bottts, {
-			seed: fullName,
-			size: 60
-		}).toDataUri()
-	);
+	let { fullName, selected = false, onclick }: Props = $props();
 </script>
 
-<div class={['item', { selected }]}>
-	<button data-id={id} class="avatar" {onclick}>
-		<img src={avatar} alt={fullName} />
-	</button>
-	<div class="name">{fullName}</div>
-</div>
+<button class="player" class:selected aria-pressed={selected} {onclick}>
+	<span class="cursor" aria-hidden="true">▼</span>
+	<img src={avatarUri(fullName)} alt="" width="48" height="48" />
+	<span class="name">{fullName}</span>
+</button>
 
 <style>
-	.item {
+	.player {
+		flex: none;
+		display: grid;
+		justify-items: center;
+		gap: var(--s1);
+		width: 72px;
+		padding: var(--s1);
 		scroll-snap-align: start;
 	}
-	.avatar {
-		display: inline-block;
-		margin: 0;
-		padding: 0 8px 0 4px;
-		border-color: var(--color-divider);
+
+	.cursor {
+		font-size: var(--text-xs);
+		visibility: hidden;
 	}
 
-	.item.selected .avatar {
-		transform: translate(8px 6px);
-		border-color: var(--color-theme-2);
-	}
-
-	.item.selected .avatar:before {
-		display: none;
-	}
-
-	.avatar img {
-		height: 60px;
-		width: 60px;
-		object-fit: contain;
-		opacity: 0.7;
-		filter: grayscale(0.45);
+	img {
+		width: 48px;
+		height: 48px;
+		margin: 3px;
+		box-shadow:
+			0 -3px 0 0 var(--paper-raised),
+			0 3px 0 0 var(--paper-raised),
+			-3px 0 0 0 var(--paper-raised),
+			3px 0 0 0 var(--paper-raised);
 	}
 
 	.name {
-		margin-top: 1em;
+		width: 100%;
+		font-size: var(--text-xs);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
 		text-align: center;
-		font-size: 0.7em;
-		opacity: 0.4;
-		display: -webkit-box;
-		line-clamp: 2;
-		-webkit-line-clamp: 2;
-		-webkit-box-orient: vertical;
 		overflow: hidden;
-		width: 68px;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
-	.item.selected .name,
-	.item.selected img {
-		opacity: 1;
-		color: var(--color-theme-2);
+	.selected .cursor {
+		visibility: visible;
+		animation: bob 0.8s steps(2) infinite;
 	}
 
-	.item.selected img {
-		transform-origin: center;
-		animation: float 1s steps(2) infinite;
-		filter: grayscale(0);
+	.selected img {
+		box-shadow:
+			0 -3px 0 0 var(--ink),
+			0 3px 0 0 var(--ink),
+			-3px 0 0 0 var(--ink),
+			3px 0 0 0 var(--ink);
 	}
 
-	@keyframes float {
-		0% {
-			transform: translateY(-2px);
-		}
-		25% {
-			transform: translateY(0);
-		}
+	.selected .name {
+		background: var(--ink);
+		color: var(--paper);
+	}
+
+	@keyframes bob {
 		50% {
 			transform: translateY(2px);
-		}
-		75% {
-			transform: translateY(0);
-		}
-		100% {
-			transform: translateY(-2px);
 		}
 	}
 </style>

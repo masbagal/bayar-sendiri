@@ -14,7 +14,6 @@
 	} from '$lib/receipt-store.svelte.js';
 	import {
 		getUsers,
-		addUser,
 		getSelectedUserId,
 		setSelectedUserId,
 		toggleAssignment,
@@ -60,17 +59,10 @@
 	onMount(() => {
 		const data = getReceiptData();
 		if (!data || data.items.length === 0) goto(resolve('/camera'));
+		else if (getUsers().length === 0) goto(resolve('/players'));
 	});
 
-	const addPeople = () => {
-		const name = prompt('Add people');
-		if (name !== null) {
-			const result = addUser(name);
-			if (!result) {
-				alert('Same name already exists');
-			}
-		}
-	};
+	const selectedName = $derived(getUsers().find((u) => u.id === getSelectedUserId())?.fullName);
 
 	const goToSummary = () => {
 		if (unassignedItemIds.length > 0) {
@@ -83,80 +75,79 @@
 </script>
 
 <svelte:head>
-	<title>Home</title>
-	<meta name="description" content="Svelte demo app" />
+	<title>Split items · Bayar Sendiri</title>
 </svelte:head>
 
 <section>
-	{#if getUsers().length > 0}
-		<div style="font-size: 0.74rem;">Total: {getUsers().length} people</div>
-	{/if}
-	<div class="avatar-list">
-		{#each getUsers() as user (user.id)}
-			<Avatar
-				id={user.id}
-				fullName={user.fullName}
-				selected={user.id === getSelectedUserId()}
-				onclick={() => {
-					setSelectedUserId(user.id);
-				}}
-			/>
-		{/each}
-		<button class="add-people" onclick={addPeople}>+Add</button>
+	<div class="party">
+		<div class="party-head">
+			<h2 id="players-label">Select player · {getUsers().length}</h2>
+			<a class="link" href={resolve('/players')}>Edit players</a>
+		</div>
+		<div class="avatar-list" role="group" aria-labelledby="players-label">
+			{#each getUsers() as user (user.id)}
+				<Avatar
+					fullName={user.fullName}
+					selected={user.id === getSelectedUserId()}
+					onclick={() => setSelectedUserId(user.id)}
+				/>
+			{/each}
+		</div>
 	</div>
 
-	{#if getUsers().length === 0}
-		<div class="instruction">
-			<p>Start by adding people, then select each person and check the items they ordered.</p>
-		</div>
+	{#if selectedName}
+		<p class="dialog prompt" aria-live="polite">
+			What did <strong>{selectedName}</strong> have?<br />Tick their items.
+		</p>
 	{/if}
 
-	<h2>Orders</h2>
 	{#if receiptData}
-		{#each receiptData.items as item (item.id)}
-			{#if editing === item.id}
+		<div class="orders">
+			<h2>Orders · {receiptData.items.length}</h2>
+			{#each receiptData.items as item (item.id)}
+				{#if editing === item.id}
+					<LineEditor
+						label={item.name}
+						amount={formatEditable(item.lineTotal, receiptData)}
+						validate={positive}
+						onsave={(label, value) => save('items', item.id, label, value)}
+						oncancel={close}
+						onremove={() => remove('items', item.id)}
+					/>
+				{:else}
+					<MenuItem
+						menuName={item.name}
+						price={formatMoney(item.lineTotal, receiptData)}
+						quantity={item.quantity}
+						disabled={!getSelectedUserId()}
+						checked={getSelectedUserId() ? isAssigned(item.id, getSelectedUserId()!) : false}
+						error={submitError && unassignedItemIds.includes(item.id)}
+						assignedUsers={getAssignedUsers(item.id)
+							.map((uid) => getUsers().find((u) => u.id === uid))
+							.filter((u) => u !== undefined)}
+						toggle={() => {
+							const sel = getSelectedUserId();
+							if (sel) toggleAssignment(item.id, sel);
+						}}
+						onedit={() => (editing = item.id)}
+					/>
+				{/if}
+			{/each}
+
+			{#if editing === NEW.items}
 				<LineEditor
-					label={item.name}
-					amount={formatEditable(item.lineTotal, receiptData)}
+					label=""
+					amount=""
 					validate={positive}
-					onsave={(label, value) => save('items', item.id, label, value)}
+					onsave={(label, value) => save('items', null, label || 'Item', value)}
 					oncancel={close}
-					onremove={() => remove('items', item.id)}
-				/>
-			{:else}
-				<MenuItem
-					id={item.id}
-					menuName={item.name}
-					price={formatMoney(item.lineTotal, receiptData)}
-					quantity={item.quantity}
-					disabled={!getSelectedUserId()}
-					checked={getSelectedUserId() ? isAssigned(item.id, getSelectedUserId()!) : false}
-					error={submitError && unassignedItemIds.includes(item.id)}
-					assignedUsers={getAssignedUsers(item.id)
-						.map((uid) => getUsers().find((u) => u.id === uid))
-						.filter((u) => u !== undefined)}
-					toggle={() => {
-						const sel = getSelectedUserId();
-						if (sel) toggleAssignment(item.id, sel);
-					}}
-					onedit={() => (editing = item.id)}
 				/>
 			{/if}
-		{/each}
-
-		{#if editing === NEW.items}
-			<LineEditor
-				label=""
-				amount=""
-				validate={positive}
-				onsave={(label, value) => save('items', null, label || 'Item', value)}
-				oncancel={close}
-			/>
-		{/if}
+		</div>
 
 		{#each chargeSections as section (section.kind)}
 			{#if receiptData[section.kind].length > 0 || editing === NEW[section.kind]}
-				<div class="summary-section">
+				<div class="charges">
 					{#each receiptData[section.kind] as charge (charge.id)}
 						{#if editing === charge.id}
 							<LineEditor
@@ -169,13 +160,16 @@
 							/>
 						{:else}
 							<button
-								class="summary-row"
-								class:discount={section.kind === 'discounts'}
+								class="charge-row"
 								onclick={() => (editing = charge.id)}
 								aria-label="Edit {charge.label}"
 							>
 								<span>{charge.label}</span>
-								<span>{section.prefix}{formatMoney(charge.amount, receiptData)} ✎</span>
+								<span
+									>{section.prefix}{formatMoney(charge.amount, receiptData)}<span aria-hidden="true"
+										>✎</span
+									></span
+								>
 							</button>
 						{/if}
 					{/each}
@@ -197,13 +191,14 @@
 			<span>Missing something?</span>
 			<button class="link" onclick={() => (editing = NEW.items)}>+ Item</button>
 			<button class="link" onclick={() => (editing = NEW.fees)}>+ Fee</button>
-			<button class="link" onclick={() => (editing = NEW.discounts)}>+ Discount</button>
+			<button class="link" onclick={() => (editing = NEW.discounts)}>+ Disc</button>
 		</div>
 
 		<div class="grand-total">
 			<span>Total</span>
 			<span>{formatMoney(receiptData.reconciliation.computedTotal, receiptData)}</span>
 		</div>
+
 		{#if editing === PRINTED_TOTAL}
 			<LineEditor
 				label="Total printed on receipt"
@@ -215,154 +210,133 @@
 				oncancel={close}
 			/>
 		{:else if receiptData.reconciliation.totalGap !== 0}
-			<div class="error-message" role="status">
-				The receipt says
-				<button class="link" onclick={() => (editing = PRINTED_TOTAL)}>
-					{formatMoney(receiptData.printedTotal, receiptData)} ✎
-				</button>, but the lines above add up to {formatMoney(
+			<div class="dialog alert" role="status">
+				Receipt says
+				<button class="inline-edit" onclick={() => (editing = PRINTED_TOTAL)}>
+					{formatMoney(receiptData.printedTotal, receiptData)}<span aria-hidden="true">✎</span>
+				</button>
+				but the lines add up to {formatMoney(
 					receiptData.reconciliation.computedTotal,
 					receiptData
-				)}. Tap ✎ on any line that doesn't match the receipt to fix it.
+				)}. Tap ✎ on any line that doesn't match.
 			</div>
 		{/if}
 
-		{#if getUsers().length > 0}
+		<div class="footer">
 			{#if submitError && unassignedItemIds.length > 0}
-				<div class="error-message">
-					{unassignedItemIds.length} item{unassignedItemIds.length > 1 ? 's' : ''} not assigned to anyone
-					yet.
+				<div class="dialog alert" role="alert">
+					{unassignedItemIds.length} item{unassignedItemIds.length > 1 ? 's' : ''} nobody claimed yet.
 				</div>
 			{/if}
-			<button class="summary-btn" onclick={goToSummary}> View Summary </button>
-		{/if}
+			<button class="btn" onclick={goToSummary}>View summary ▶</button>
+		</div>
 	{/if}
 </section>
 
 <style>
-	h2 {
-		font-size: 1.5rem;
+	section {
+		display: flex;
+		flex-direction: column;
+		gap: var(--s3);
+	}
+
+	.party {
+		position: sticky;
+		top: 0;
+		z-index: 2;
+		margin: calc(-1 * var(--s3)) calc(-1 * var(--s3)) 0;
+		padding: var(--s2) var(--s3) var(--s1);
+		background: var(--paper);
+		background-image: linear-gradient(to right, var(--ink) 50%, transparent 50%);
+		background-size: 4px 2px;
+		background-repeat: repeat-x;
+		background-position: bottom;
+	}
+
+	.party-head {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
 	}
 
 	.avatar-list {
 		display: flex;
-		flex-wrap: nowrap;
-		width: 100%;
-		overflow-x: scroll;
-		overflow-y: visible;
-		gap: 0.5em;
+		gap: var(--s1);
+		overflow-x: auto;
 		scroll-snap-type: x mandatory;
-		-ms-overflow-style: none;
 		scrollbar-width: none;
-		padding-bottom: 8px;
-		margin-bottom: 1rem;
-		margin-top: 1rem;
+		padding-block: var(--s1);
 	}
 
-	.summary-section {
-		padding: 0.75rem 1rem;
-		border-bottom: 1px dashed var(--color-divider);
-	}
-
-	.summary-row {
-		display: flex;
-		justify-content: space-between;
-		font-size: 0.9rem;
-		padding: 0.25rem 0;
-	}
-
-	.discount {
-		color: var(--color-theme-2);
-	}
-
-	button.summary-row {
-		width: 100%;
-		border: none;
-		background: none;
-		text-transform: none;
-		color: inherit;
-		text-align: left;
-	}
-
-	button.summary-row.discount {
-		color: var(--color-theme-2);
-	}
-
-	button.summary-row::before,
-	button.link::before {
+	.avatar-list::-webkit-scrollbar {
 		display: none;
 	}
 
-	button.link {
-		width: auto;
-		padding: 0.25rem 0;
-		border: none;
-		background: none;
-		color: inherit;
-		text-transform: none;
-		text-decoration: underline;
-		font-size: inherit;
+	.orders,
+	.charges {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.orders h2 {
+		padding-bottom: var(--s1);
+	}
+
+	.charge-row {
+		display: flex;
+		justify-content: space-between;
+		gap: var(--s3);
+		padding: var(--s2);
+		text-align: left;
+		background-image: linear-gradient(to right, var(--ink) 50%, transparent 50%);
+		background-size: 4px 2px;
+		background-repeat: repeat-x;
+		background-position: bottom;
+	}
+
+	.charge-row:hover {
+		background-color: var(--paper-raised);
 	}
 
 	.add-lines {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
-		padding: 0.75rem 1rem;
-		font-size: 0.85rem;
+		flex-wrap: wrap;
+		gap: var(--s1) var(--s3);
+		padding-inline: var(--s2);
 	}
 
 	.add-lines span {
-		opacity: 0.7;
 		margin-right: auto;
-	}
-
-	.add-lines button {
-		white-space: nowrap;
+		font-size: var(--text-xs);
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
 	}
 
 	.grand-total {
 		display: flex;
 		justify-content: space-between;
-		font-weight: bold;
-		font-size: 1.2rem;
-		padding: 1rem;
+		gap: var(--s3);
+		padding: var(--s2) var(--s3);
+		background: var(--ink);
+		color: var(--paper);
+		font-size: var(--text-md);
+		text-transform: uppercase;
 	}
 
-	.instruction {
-		text-align: center;
-		font-size: 0.85rem;
-		opacity: 0.7;
-		padding: 1rem;
-		border: 1px dashed var(--color-divider);
-		border-radius: 4px;
-		margin-bottom: 1rem;
+	.inline-edit {
+		text-decoration: underline;
+		text-decoration-thickness: 2px;
+		text-underline-offset: 4px;
 	}
 
-	.instruction p {
-		margin: 0;
-	}
-
-	.error-message {
-		color: #d20f39;
-		font-size: 0.85rem;
-		text-align: center;
-		padding: 0.5rem 1rem;
-		margin-top: 0.5rem;
-	}
-
-	button.summary-btn {
-		width: 100%;
-		margin-top: 1rem;
-	}
-
-	button.add-people {
-		height: 68px;
-		width: 68px;
-		font-size: 0.8rem;
-		display: flex;
-		flex-basis: 60px;
-		align-items: center;
-		justify-content: center;
-		scroll-snap-align: start;
+	.footer {
+		position: sticky;
+		bottom: 0;
+		display: grid;
+		gap: var(--s2);
+		margin-inline: calc(-1 * var(--s3));
+		padding: var(--s2) var(--s3) var(--s3);
+		background: var(--paper);
 	}
 </style>

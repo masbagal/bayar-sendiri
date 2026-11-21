@@ -4,10 +4,24 @@
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.svg" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="theme-color" content="#feeac5" />
+		<script>
+			// Apply the saved palette before first paint (see src/lib/palette.svelte.ts).
+			try {
+				var palette = localStorage.getItem('palette');
+				if (palette) document.documentElement.dataset.palette = palette;
+			} catch (e) {}
+		</script>
+		<link
+			rel="preload"
+			href="%sveltekit.assets%/fonts/DepartureMono.otf"
+			as="font"
+			type="font/otf"
+			crossorigin
+		/>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
-		<div class="body-bg"></div>
 		<div style="display: contents">%sveltekit.body%</div>
 	</body>
 </html>

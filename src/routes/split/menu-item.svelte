@@ -1,8 +1,7 @@
 <script lang="ts">
-	import AvatarSmall from './avatar-stacked.svelte';
+	import { avatarUri } from '$lib/avatar.js';
 
 	interface Props {
-		id: string;
 		menuName: string;
 		price: string;
 		quantity: number;
@@ -15,102 +14,124 @@
 	}
 
 	let {
-		id = '0',
-		menuName = 'Unknown',
-		price = '0',
-		quantity = 1,
-		checked = false,
-		disabled = false,
-		error = false,
-		assignedUsers = [],
+		menuName,
+		price,
+		quantity,
+		checked,
+		disabled,
+		error,
+		assignedUsers,
 		toggle,
 		onedit
 	}: Props = $props();
 	const uid = $props.id();
 </script>
 
-<div data-id={id} class="menu-item" class:active={checked} class:error>
-	<div class="title">
-		<label for="{uid}-title">{menuName}</label>
-		<input id="{uid}-title" type="checkbox" {checked} {disabled} onchange={toggle} />
-	</div>
-	<div class="data">
-		<div class="avatar">
-			{#each assignedUsers as user (user.fullName)}
-				<AvatarSmall fullName={user.fullName} />
-			{/each}
+<div class="menu-item" class:active={checked} class:error>
+	<input id={uid} type="checkbox" {checked} {disabled} onchange={toggle} />
+	<div class="body">
+		<label for={uid}>
+			{#if error}<span class="flag">!</span>{/if}
+			{menuName}
+		</label>
+		<div class="meta">
+			<span class="qty">×{quantity}</span>
+			<span class="avatars">
+				{#each assignedUsers as user (user.fullName)}
+					<img src={avatarUri(user.fullName)} alt={user.fullName} title={user.fullName} />
+				{/each}
+			</span>
 		</div>
-		<div class="amount">x{quantity}</div>
-		<button class="price" onclick={onedit} aria-label="Edit {menuName}, {price}">{price} ✎</button>
 	</div>
+	<button class="price" onclick={onedit} aria-label="Edit {menuName}, {price}">
+		{price}<span aria-hidden="true">✎</span>
+	</button>
 </div>
 
 <style>
 	.menu-item {
-		padding: 1rem 1rem;
-		border-bottom: 1px dashed var(--color-divider);
-		position: relative;
-	}
-
-	.menu-item.active::before,
-	.menu-item.error::before {
-		content: '';
-		position: absolute;
-		inset: 0.3rem -0.25rem;
-		border-radius: 2px;
-		z-index: -1;
-	}
-
-	.menu-item.active::before {
-		background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2340a02b' fill-opacity='0.41' fill-rule='evenodd'%3E%3Cpath d='M5 0h1L0 6V5zM6 5v1H5z'/%3E%3C/g%3E%3C/svg%3E");
-	}
-
-	.menu-item.error::before {
-		background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23f47f67' fill-opacity='0.57' fill-rule='evenodd'%3E%3Cpath d='M5 0h1L0 6V5zM6 5v1H5z'/%3E%3C/g%3E%3C/svg%3E");
-	}
-	.menu-item label {
-		font-weight: bold;
-		font-size: 0.9rem;
-		margin-bottom: 1rem;
-		text-shadow:
-			-1px -1px 0 var(--color-bg-1),
-			1px -1px 0 var(--color-bg-1),
-			-1px 1px 0 var(--color-bg-1),
-			1px 1px 0 var(--color-bg-1);
-	}
-
-	.menu-item .title {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-	}
-
-	.menu-item .avatar {
-		height: 36px;
-	}
-
-	.menu-item .data {
 		display: grid;
-		grid-template-columns: 1fr 1fr 1fr;
+		grid-template-columns: auto 1fr auto;
+		align-items: start;
+		gap: var(--s3);
+		padding: var(--s3) var(--s2);
+		background-image: linear-gradient(to right, var(--ink) 50%, transparent 50%);
+		background-size: 4px 2px;
+		background-repeat: repeat-x;
+		background-position: bottom;
+	}
+
+	.menu-item.active {
+		background-color: var(--paper-raised);
+	}
+
+	.menu-item.error {
+		background-image:
+			linear-gradient(to right, var(--ink) 50%, transparent 50%),
+			repeating-linear-gradient(
+				-45deg,
+				transparent 0 6px,
+				color-mix(in srgb, var(--ink) 15%, transparent) 6px 8px
+			);
+		background-size:
+			4px 2px,
+			auto;
+		background-repeat: repeat-x, repeat;
+		background-position:
+			bottom,
+			0 0;
+	}
+
+	.body {
+		display: grid;
+		gap: var(--s1);
+		min-width: 0;
+	}
+
+	label {
+		cursor: pointer;
+		overflow-wrap: anywhere;
+	}
+
+	.flag {
+		display: inline-block;
+		padding: 0 var(--s1);
+		background: var(--ink);
+		color: var(--paper);
+	}
+
+	.meta {
+		display: flex;
 		align-items: center;
+		gap: var(--s2);
+		min-height: 24px;
 	}
 
-	.menu-item .data .price,
-	.menu-item .data .amount {
+	.qty {
+		font-size: var(--text-xs);
+	}
+
+	.avatars {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 2px;
+	}
+
+	.avatars img {
+		width: 24px;
+		height: 24px;
+	}
+
+	.price {
+		display: flex;
+		gap: var(--s1);
+		padding: 0 0 var(--s1);
 		text-align: right;
+		white-space: nowrap;
+		border-bottom: 2px solid transparent;
 	}
 
-	.menu-item .data button.price {
-		width: auto;
-		justify-self: end;
-		padding: 0.25rem 0;
-		border: none;
-		background: none;
-		text-transform: none;
-		font-size: inherit;
-	}
-
-	.menu-item .data button.price::before {
-		display: none;
+	.price:hover {
+		border-bottom-color: var(--ink);
 	}
 </style>
