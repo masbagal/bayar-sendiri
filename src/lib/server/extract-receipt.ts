@@ -49,10 +49,62 @@ const PROMPT = `Transcribe a restaurant receipt for bill splitting. Copy every a
 export class ExtractionError extends Error {
 	constructor(
 		message: string,
-		readonly status: number
+		readonly status: number,
+		/** Safe to show the user; when null the API answers with a generic message. */
+		readonly userMessage: string | null = null,
+		/** When a spending limit resets (ISO 8601), for budget errors. */
+		readonly resetsAt: string | null = null
 	) {
 		super(message);
 	}
+}
+
+const OPENROUTER = 'https://openrouter.ai/api/v1';
+
+/** When the key's binding budget resets, or null if it never does or the lookup fails. */
+async function budgetResetsAt(apiKey: string): Promise<string | null> {
+	try {
+		const res = await fetch(`${OPENROUTER}/key`, {
+			headers: { Authorization: `Bearer ${apiKey}` },
+			signal: AbortSignal.timeout(5_000)
+		});
+		const body = await res.json();
+		return body.data?.effective_budget?.resets_at ?? null;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Map an OpenRouter error response. Spending limits come back as 402 (observed for a
+ * per-key daily limit) or 403 (documented for budgets), tagged by `error.metadata.limit_source`.
+ */
+export async function openRouterError(
+	status: number,
+	text: string,
+	retryAfter: string | null,
+	apiKey: string
+): Promise<ExtractionError> {
+	let metadata: { limit_source?: string; resets_at?: string } = {};
+	try {
+		metadata = JSON.parse(text).error?.metadata ?? {};
+	} catch {
+		// Non-JSON error body: fall through to the generic error.
+	}
+	const source = metadata.limit_source;
+	const log = `OpenRouter ${status}: ${text.slice(0, 300)}`;
+
+	if (source === 'openrouter_in_flight_budget' || (status === 402 && retryAfter)) {
+		return new ExtractionError(log, 503, 'Too many receipts at once. Try again in a moment.');
+	}
+	if (status === 402 || (status === 403 && source)) {
+		const resetsAt =
+			source === 'openrouter_credits'
+				? null
+				: (metadata.resets_at ?? (await budgetResetsAt(apiKey)));
+		return new ExtractionError(log, 429, "Today's receipt-scanning budget is used up.", resetsAt);
+	}
+	return new ExtractionError(log, 502);
 }
 
 export interface ExtractOptions {
@@ -75,7 +127,7 @@ async function callModel(apiKey: string, model: string, messages: Message[]) {
 	const started = Date.now();
 	let body: { choices?: { message?: { content?: string } }[]; usage?: { cost?: number } };
 	try {
-		const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+		const res = await fetch(`${OPENROUTER}/chat/completions`, {
 			method: 'POST',
 			// A stalled provider would otherwise leave the user on the loading screen forever.
 			signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
@@ -89,9 +141,11 @@ async function callModel(apiKey: string, model: string, messages: Message[]) {
 			})
 		});
 		if (!res.ok) {
-			throw new ExtractionError(
-				`OpenRouter ${res.status}: ${(await res.text()).slice(0, 300)}`,
-				502
+			throw await openRouterError(
+				res.status,
+				await res.text(),
+				res.headers.get('retry-after'),
+				apiKey
 			);
 		}
 		body = await res.json();
@@ -258,7 +312,8 @@ export async function extractReceipt(
 		ms: first.ms
 	});
 	if (first.extraction && !first.extraction.isReceipt) {
-		throw new ExtractionError(first.extraction.rejectReason ?? 'Not a restaurant receipt', 422);
+		const reason = first.extraction.rejectReason ?? 'Not a restaurant receipt';
+		throw new ExtractionError(reason, 422, reason);
 	}
 	if (first.receipt && isBalanced(first.receipt.reconciliation)) {
 		return { receipt: first.receipt, attempts };
@@ -287,7 +342,8 @@ export async function extractReceipt(
 		ms: second.ms
 	});
 	if (!first.receipt && second.extraction && !second.extraction.isReceipt) {
-		throw new ExtractionError(second.extraction.rejectReason ?? 'Not a restaurant receipt', 422);
+		const reason = second.extraction.rejectReason ?? 'Not a restaurant receipt';
+		throw new ExtractionError(reason, 422, reason);
 	}
 
 	const candidates = [first.receipt, second.receipt].filter((r): r is ReceiptData => r !== null);

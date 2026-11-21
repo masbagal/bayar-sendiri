@@ -20,6 +20,20 @@
 		}, 200);
 	};
 
+	/** " Scanning is back at 07.00." in the viewer's local time, or "" if unknown. */
+	const resumeAt = (resetsAt: string | null | undefined) => {
+		if (!resetsAt) return '';
+		const at = new Date(resetsAt);
+		if (Number.isNaN(at.getTime())) return '';
+		const sameDay = at.toDateString() === new Date().toDateString();
+		const when = at.toLocaleString('en-GB', {
+			hour: '2-digit',
+			minute: '2-digit',
+			...(sameDay ? {} : { weekday: 'long' })
+		});
+		return ` Scanning is back at ${when}.`;
+	};
+
 	const getCacheKey = async (img: string) => {
 		const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(img));
 		const hex = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
@@ -52,7 +66,9 @@
 
 			if (!response.ok) {
 				const err = await response.json().catch(() => ({ message: 'Unknown error' }));
-				throw new Error(err.message ?? `Server error: ${response.status}`);
+				throw new Error(
+					(err.message ?? `Server error: ${response.status}`) + resumeAt(err.resetsAt)
+				);
 			}
 
 			const data = await response.json();

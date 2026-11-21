@@ -34,7 +34,17 @@ export const POST: RequestHandler = async ({ request }) => {
 	} catch (err) {
 		if (err instanceof ExtractionError) {
 			console.error('Receipt extraction failed:', err.message);
-			error(err.status, err.status === 422 ? err.message : 'Failed to analyze receipt');
+			if (!err.userMessage) error(err.status, 'Failed to analyze receipt');
+			const retryAfter = err.resetsAt
+				? Math.max(0, Math.ceil((Date.parse(err.resetsAt) - Date.now()) / 1000))
+				: null;
+			return json(
+				{ message: err.userMessage, resetsAt: err.resetsAt },
+				{
+					status: err.status,
+					headers: retryAfter === null ? {} : { 'Retry-After': String(retryAfter) }
+				}
+			);
 		}
 		throw err;
 	}
